@@ -7,7 +7,7 @@ const router = express.Router();
 
 router.get("/properties", (req, res) => {
   database
-    .getAllProperties(req.query, 20)
+    .getAllProperties(req.query, 10)
     .then((properties) => res.send({ properties }))
     .catch((e) => {
       console.error(e);
