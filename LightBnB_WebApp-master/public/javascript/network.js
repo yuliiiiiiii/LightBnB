@@ -1,3 +1,5 @@
+// manages all ajax requests to the server
+
 function getMyDetails() {
   console.log("getMyDetails");
   return $.ajax({

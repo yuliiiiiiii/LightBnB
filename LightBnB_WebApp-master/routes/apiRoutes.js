@@ -1,3 +1,5 @@
+// responsible for any HTTP requests to /api/something, making changes in the database(call functions in the database.js)
+
 const express = require("express");
 const database = require("../db/database");
 

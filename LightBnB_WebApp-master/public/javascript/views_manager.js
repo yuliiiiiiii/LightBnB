@@ -1,3 +1,5 @@
+// manages which components appear on screen
+
 $(() => {
 
   const $main = $('#main-content');

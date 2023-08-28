@@ -1,3 +1,5 @@
+//the entry point to the application. This connects the routes to the database.
+
 const path = require("path");
 const express = require("express");
 const cookieSession = require("cookie-session");
