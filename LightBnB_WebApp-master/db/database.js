@@ -2,6 +2,7 @@
 
 const properties = require("./json/properties.json");
 const users = require("./json/users.json");
+const bcrypt = require("bcrypt");
 const { Pool } = require('pg');
 
 const pool = new Pool ({
@@ -18,14 +19,15 @@ const pool = new Pool ({
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithEmail = function (email) {
-  let resolvedUser = null;
-  for (const userId in users) {
-    const user = users[userId];
-    if (user && user.email.toLowerCase() === email.toLowerCase()) {
-      resolvedUser = user;
-    }
-  }
-  return Promise.resolve(resolvedUser);
+  return pool
+  .query(`SELECT * FROM users WHERE email = $1`, [email])
+  .then(res => {
+    return res.rows[0];
+    // res.rows returns an array!, need to return the object inside of the array
+  })
+  .catch(error =>{
+    console.log(error.message)
+  })
 };
 
 /**
@@ -34,7 +36,14 @@ const getUserWithEmail = function (email) {
  * @return {Promise<{}>} A promise to the user.
  */
 const getUserWithId = function (id) {
-  return Promise.resolve(users[id]);
+  return pool
+  .query(`SELECT * FROM users WHERE users.id = ${id};`)
+  .then(res => {
+    return res.rows[0];
+  })
+  .catch(error =>{
+    console.log(error.message)
+  })
 };
 
 /**
@@ -43,10 +52,21 @@ const getUserWithId = function (id) {
  * @return {Promise<{}>} A promise to the user.
  */
 const addUser = function (user) {
-  const userId = Object.keys(users).length + 1;
-  user.id = userId;
-  users[userId] = user;
-  return Promise.resolve(user);
+  // const userId = Object.keys(users).length + 1;
+  // user.id = userId;
+  // users[userId] = user;
+  // return Promise.resolve(user);
+
+  //Accepts a user object that will have a name, email, and password property
+  return pool
+  .query(`INSERT INTO users(name, email, password)
+  VALUES('${user.name}', '${user.email}', '${user.password}') RETURNING *;`)
+  .then (res => {
+    return res.rows;
+  })
+  .catch (error => {
+    console.log(error.message);
+  });
 };
 
 /// Reservations

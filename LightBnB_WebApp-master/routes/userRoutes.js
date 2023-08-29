@@ -1,4 +1,4 @@
-// responsible for any HTTP requests to /users/something, making changes in the database(call functions in the database.js)
+// responsible for any HTTP requests to /users/something, making changes in the database
 
 const express = require("express");
 const bcrypt = require("bcrypt");
@@ -28,9 +28,10 @@ router.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
 
-  database.getUserWithEmail(email).then((user) => {
+  database.getUserWithEmail(email)
+  .then((user) => {
     if (!user) {
-      return res.send({ error: "no user with that id" });
+      return res.send({ error: "no user with that email" });
     }
 
     if (!bcrypt.compareSync(password, user.password)) {
@@ -42,7 +43,7 @@ router.post("/login", (req, res) => {
       user: {
         name: user.name,
         email: user.email,
-        id: user.id,
+        id: user.id
       },
     });
   });
