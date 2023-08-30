@@ -1,4 +1,4 @@
-SELECT properties.id, title, cost_per_night, avg(rating) AS avergae_rating
+SELECT properties.id, title, cost_per_night, avg(rating) AS average_rating
 FROM properties
 LEFT JOIN property_reviews ON property_id = properties.id
 -- LEFT JOIN to show the properties even thought they don't have rating

@@ -106,19 +106,73 @@ const getAllReservations = function (guest_id, limit = 10) {
  * @return {Promise<[{}]>}  A promise to the properties.
  */
 const getAllProperties = function (options, limit = 10) {
-  console.log(limit);
-  // const limitedProperties = {};
-  // for (let i = 1; i <= limit; i++) {
-  //   limitedProperties[i] = properties[i];
-  // }
-  // return Promise.resolve(limitedProperties);
+  // When getAllProperties is called, the options object can potentially contain the following properties:
+  // {
+//   city,
+//   owner_id,
+//   minimum_price_per_night,
+//   maximum_price_per_night,
+//   minimum_rating;
+// }
+
+  //1. Setup an array to hold any parameters that may be available for the query.
+  let queryParams = [];
+  
+  // 2. Start the query with all information that comes before the WHERE clause.
+  let queryString = `
+  SELECT properties.*, avg(rating) AS average_rating 
+    FROM properties 
+    JOIN property_reviews ON properties.id = property_id
+    WHERE 1 = 1
+  `;
+
+  // 3. Check if a city has been passed in as an option
+  if (options.city) {
+    // 4. Add the city to the params array and create a WHERE clause for the city.
+    queryParams.push(`%${options.city}%`)
+
+    //5. We can use the length of the array to dynamically get the $n placeholder number. Since this is the first parameter, it will be $1.
+    // The % syntax for the LIKE clause must be part of the parameter, not the query.
+    queryString += `AND city LIKE $${queryParams.length} `;
+  }
+
+ if (options.owner_id) {
+  queryParams.push(options.owner_id);
+  queryString += `AND owner_id = $${queryParams.length}`;
+ }
+
+ if (options.minimum_price_per_night && options.maximum_price_per_night) {
+  const minimum_price = options.minimum_price_per_night * 100;
+  const maximum_price = options.maximum_price_per_night * 100;
+
+  queryParams.push(minimum_price, maximum_price);
+  queryString += `AND cost_per_night BETWEEN $${queryParams.length -1} AND $${queryParams.length}`;
+ }
+
+  queryString += `GROUP BY properties.id\n`;
+
+ if (options.minimum_rating) {
+  queryParams.push(Number(options.minimum_rating));
+  queryString += `HAVING avg(rating) >= $${queryParams.length}`
+ }
+
+  //6. Add any query that comes after the WHERE clause.
+  queryParams.push(limit);
+  queryString += `
+  ORDER BY cost_per_night
+  LIMIT $${queryParams.length};
+  `;
+  
+  //7. Console log everything just to make sure we've done it right.
+  console.log(queryString, queryParams);
+
+  //8. Run the query.
   return pool
-    .query(`SELECT * FROM properties LIMIT $1`, [limit])
-    .then(res => {
-      // console.log(res.rows);
-       return res.rows;
-    })
-    .catch(err => {
+  .query(queryString, queryParams)
+  .then(res => {
+    return res.rows;
+  })
+  .catch(err => {
        console.log(err.message);
     });
 };
