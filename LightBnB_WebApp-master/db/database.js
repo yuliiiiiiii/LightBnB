@@ -122,7 +122,7 @@ const getAllProperties = function (options, limit = 10) {
   let queryString = `
   SELECT properties.*, avg(rating) AS average_rating 
     FROM properties 
-    JOIN property_reviews ON properties.id = property_id
+    LEFT JOIN property_reviews ON properties.id = property_id
     WHERE 1 = 1
   `;
 
@@ -150,6 +150,7 @@ const getAllProperties = function (options, limit = 10) {
  }
 
   queryString += `GROUP BY properties.id\n`;
+  // because HAVING needs to work on the GROUP, so HAVING is always after GROUP BY
 
  if (options.minimum_rating) {
   queryParams.push(Number(options.minimum_rating));
@@ -183,10 +184,45 @@ const getAllProperties = function (options, limit = 10) {
  * @return {Promise<{}>} A promise to the property.
  */
 const addProperty = function (property) {
-  const propertyId = Object.keys(properties).length + 1;
-  property.id = propertyId;
-  properties[propertyId] = property;
-  return Promise.resolve(property);
+  console.log(property);
+  //to show the data type of inputs(proprtty), in order to make sure it's same to the data type required by table columns
+  
+  const numberTypeColumns = ['owner_id', 'cost_per_night', 'parking_spaces', 'number_of_bathrooms', 'number_of_bedrooms'];
+  // columns whoese value need to be integer
+
+  const columns = ['owner_id', 'title', 'description', 'thumbnail_photo_url', 'cover_photo_url', 'cost_per_night', 'street', 'city', 'province', 'post_code', 'country', 'parking_spaces', 'number_of_bathrooms', 'number_of_bedrooms'];
+
+ 
+  const queryParams = columns.map(column_name => {
+    return numberTypeColumns.includes(column_name)
+    // check if the value of column in columns needs to be integer
+    ? Number(property[column_name])
+    // if true, change the value into integer
+    : property[column_name]
+  });
+
+  const columnsList = columns.join(', ')
+  // to get a string of columns
+
+  const placeholders = columns.map((val, index) => {
+    return `$${index + 1}`
+  }).join(', ')
+  // for VALUES
+
+  return pool
+  .query(`
+  INSERT INTO properties (${columnsList}) 
+  VALUES(${placeholders}) RETURNING *;
+  `, queryParams)
+  // RETURNING *; to return the saved property
+  .then (res => {
+    console.log('created', res.rows[0]);
+    // to get the property id of the newly created property
+    return res.rows[0];
+  })
+  .catch (error => {
+    console.log(error.message);
+  });
 };
 
 module.exports = {
